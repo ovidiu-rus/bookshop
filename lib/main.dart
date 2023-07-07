@@ -163,9 +163,82 @@ class CommercialOffers extends StatelessWidget {
 
   CommercialOffers({required this.selectedIsbns});
 
+  Future<List<dynamic>> fetchOffers() async {
+    String isbnsString = selectedIsbns.join(",");
+    var url = "https://henri-potier.techx.fr/books/$isbnsString/commercialOffers";
+    print("----> $url");
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body)['offers'];
+        return jsonData as List<dynamic>;
+      } else {
+        // handle errors in better way
+        print("----> error");
+        return [];
+      }
+    } catch (e) {
+      print("----> error2 $e");
+      // handle errors in better way
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    throw UnimplementedError();
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
+    return Scaffold(
+        appBar: AppBar(
+          // TRY THIS: Try changing the color here to a specific color (to
+          // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+          // change color while the other colors stay the same.
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: const Text(
+            'Offers',
+            style: TextStyle(
+                fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        body: Column(
+          children: [
+            FutureBuilder<List<dynamic>>(
+              future: fetchOffers(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final jsonData = snapshot.data;
+                  print("----> $jsonData");
+                  return ListView.builder(
+                    scrollDirection: Axis.vertical,
+                    shrinkWrap: true,
+                    itemCount: jsonData?.length,
+                    itemBuilder: (context, index) {
+                      final item = jsonData?[index];
+                      print("----> $item");
+                      return ListTile(
+                        title: Text("${item['type']}"),
+                        subtitle: Text("${item['sliceValue'] ?? 0}"),
+                        trailing: Text("${item['value']}"),
+                      );
+                    },
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            )
+          ],
+        ));
   }
 }
